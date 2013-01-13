@@ -43,15 +43,26 @@ object ImplementImpl {
             EmptyTree)
         }
       }
+
+    def buildTypeParams(m: MethodSymbol) = {
+      m.typeParams map { t =>
+        val TypeBounds(lo, hi) = t.typeSignature
+        TypeDef(Modifiers(PARAM), 
+          newTypeName("NEW_" + t.name.toString), //! TODO - remove "NEW_" prefix (for help during debugging)
+          List(), 
+          TypeBoundsTree(TypeTree(lo), TypeTree(hi)))
+      }
+    }
       
     def methodImpl(m: MethodSymbol): DefDef = {
       val mt = m.typeSignatureIn(typeToImplement)
+      val tparams = buildTypeParams(m)
       val params = buildParams(mt)
       val rt = finalResultType(mt)
       DefDef(
         Modifiers(OVERRIDE),
         m.name, 
-        m.typeParams map {t => TypeDef(t)},
+        tparams,
         params,
         paramType(rt),
         castTo(Literal(Constant(null)), rt))
