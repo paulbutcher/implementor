@@ -46,7 +46,7 @@ object ImplementImpl {
 
     def buildTypeParams(m: MethodSymbol) = {
       m.typeParams map { t =>
-        val TypeBounds(lo, hi) = t.typeSignature
+        val TypeBounds(lo, hi) = t.typeSignature.asSeenFrom(typeToImplement, typeToImplement.typeSymbol)
         TypeDef(Modifiers(PARAM), 
           newTypeName("NEW_" + t.name.toString), //! TODO - remove "NEW_" prefix (for help during debugging)
           List(), 
