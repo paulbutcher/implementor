@@ -27,8 +27,26 @@ object ImplementImpl {
       case PolyType(_, result) => paramss(result)
       case _ => Nil
     }
-      
-    def paramType(t: Type) = TypeTree(t)
+
+    def getPackage(sym: Symbol): RefTree = {
+      val name = newTermName(sym.name.toString)
+      if (sym.owner == c.mirror.RootClass)
+        Ident(name)
+      else
+        Select(getPackage(sym.owner), name)
+    }
+
+    def fullTypeName(sym: Symbol) = Select(getPackage(sym.owner), newTypeName(sym.name.toString))
+
+    def paramType(t: Type): Tree = {
+      val TypeRef(_, sym, params) = t
+      if (sym.isParameter)
+        Ident(newTypeName(sym.name.toString))
+      else if (params.isEmpty)
+        fullTypeName(sym)
+      else
+        AppliedTypeTree(fullTypeName(sym), params map { p => paramType(p) })
+    }
 
     def methodsNotInObject =
       typeToImplement.members filter (m => m.isMethod && !isMemberOfObject(m)) map (_.asMethod)
@@ -48,7 +66,7 @@ object ImplementImpl {
       m.typeParams map { t =>
         val TypeBounds(lo, hi) = t.typeSignature.asSeenFrom(typeToImplement, typeToImplement.typeSymbol)
         TypeDef(Modifiers(PARAM), 
-          newTypeName("NEW_" + t.name.toString), //! TODO - remove "NEW_" prefix (for help during debugging)
+          newTypeName(t.name.toString),
           List(), 
           TypeBoundsTree(TypeTree(lo), TypeTree(hi)))
       }
@@ -58,13 +76,13 @@ object ImplementImpl {
       val mt = m.typeSignatureIn(typeToImplement)
       val tparams = buildTypeParams(m)
       val params = buildParams(mt)
-      val rt = finalResultType(mt)
+      val rt = paramType(finalResultType(mt))
       DefDef(
         Modifiers(OVERRIDE),
         m.name, 
         tparams,
         params,
-        paramType(rt),
+        rt,
         castTo(Literal(Constant(null)), rt))
     }
       
@@ -99,15 +117,15 @@ object ImplementImpl {
             newTermName("<init>")), 
           List()))
       
-    def castTo(expr: Tree, t: Type) =
+    def castTo(expr: Tree, t: Tree) =
       TypeApply(
         Select(expr, newTermName("asInstanceOf")),
-        List(TypeTree(t)))
+        List(t))
   
     val methodsToImplement = methodsNotInObject.toList
     val members = methodsToImplement map { m => methodImpl(m) }
       
-    val result = castTo(anonClass(members), typeToImplement)
+    val result = castTo(anonClass(members), TypeTree(typeToImplement))
 
     println("------------")
     println(showRaw(result))
