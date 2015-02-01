@@ -3,9 +3,9 @@ import Keys._
 
 object BuildSettings {
   val buildVersion = "0.1"
-  val buildScalaVersion = "2.10.0"
+  val buildScalaVersion = "2.11.5"
 
-  val buildSettings = Defaults.defaultSettings ++ Seq(
+  val buildSettings = Defaults.coreDefaultSettings ++ Seq(
     organization := "org.scalamock",
     version := buildVersion,
     scalaVersion := buildScalaVersion,
@@ -22,7 +22,7 @@ object ShellPrompt {
     def buffer[T] (f: => T): T = f
   }
   def currBranch = (
-    ("git status -sb" lines_! devnull headOption)
+    (("git status -sb" lines_! devnull).headOption)
       getOrElse "-" stripPrefix "## "
   )
 
@@ -36,14 +36,8 @@ object ShellPrompt {
   }
 }
 
-object Dependencies {
-  val scalatest =  "org.scalatest" % "scalatest_2.10.0" % "2.0.M5"
-  val reflect = "org.scala-lang" % "scala-reflect" % BuildSettings.buildScalaVersion
-}
-
 object ScalaMockBuild extends Build {
   import BuildSettings._
-  import Dependencies._
 
   lazy val scalamock = Project(
     "Implementor", 
@@ -55,7 +49,7 @@ object ScalaMockBuild extends Build {
     file("core"),
     settings = buildSettings ++ Seq(
       name := "Implementor Core",
-	    libraryDependencies ++= Seq(reflect)
+	    libraryDependencies ++= Seq("org.scala-lang" % "scala-reflect" % BuildSettings.buildScalaVersion)
     ))
 
   lazy val core_tests = Project(
