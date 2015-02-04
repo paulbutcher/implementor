@@ -32,7 +32,7 @@ object ImplementImpl {
             }
           }
         
-        q"override def $name[..$tparams](...$paramss): $res = nil.asInstanceOf[$res]"
+        q"override def $name[..$tparams](...$paramss): $res = null.asInstanceOf[$res]"
       }
     
     c.Expr[Any](q"""
