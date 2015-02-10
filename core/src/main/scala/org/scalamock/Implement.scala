@@ -23,18 +23,14 @@ object ImplementImpl {
     
     val methods = methodsToImplement map { m =>
         val info = m.infoIn(typeToImplement)
-        val name = m.name
-        val tparams = info.typeParams match {
-          case Nil => ""
-          case tps => tps.map(_.name).mkString("[", ", ", "]")
-        }
-        val res = info.finalResultType
+        val name = m.name.toTermName
+        val resTpe = info.finalResultType
+        val tparams = info.typeParams.map(_.name)
+
         val paramss = info.paramLists.map { ps =>
-            ps.map(p => s"${p.name}: ${p.infoIn(typeToImplement)}").mkString("(", ", ", ")")
-          }.mkString("")
-        val method = s"def $name$tparams$paramss = null.asInstanceOf[$res]"
-        
-        c.parse(method)
+            ps.map(p => q"${p.name.toTermName}: ${p.infoIn(typeToImplement)}")
+          }
+        q"def $name[..$tparams](...$paramss): $resTpe = null.asInstanceOf[$resTpe]"
       }
     
     c.Expr[Any](q"""
