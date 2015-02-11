@@ -11,32 +11,37 @@ object Implement {
 object ImplementImpl {
   import reflect.macros.whitebox.Context
   
-  def implement[T: c.WeakTypeTag](c: Context): c.Expr[Any] = {
+  def implement[T: c.WeakTypeTag](c: Context): c.Tree = {
     import c.universe._
     
-    def isMemberOfObject(m: Symbol) = TypeTag.Object.tpe.member(m.name) != NoSymbol
-    
-    val typeToImplement = weakTypeOf[T]
-    val methodsToImplement = typeToImplement.members filter { m => 
-        m.isMethod && !isMemberOfObject(m)
-      }
-    
-    val methods = methodsToImplement map { m =>
-        val info = m.infoIn(typeToImplement)
-        val name = m.name.toTermName
-        val resTpe = info.finalResultType
-        val tparams = info.typeParams.map(_.name)
+    val tpe = weakTypeOf[T]
+    val targs = tpe.typeArgs.map(_.typeSymbol)
+    val tparms = tpe.typeConstructor.typeSymbol.asType.typeParams
 
-        val paramss = info.paramLists.map { ps =>
-            ps.map(p => q"${p.name.toTermName}: ${p.infoIn(typeToImplement)}")
-          }
+    def objMember(m: Symbol) = typeOf[Object].member(m.name) != NoSymbol
+
+    val methods = tpe.members.collect {
+      case m if m.isMethod && !objMember(m) => m.asMethod
+    }
+
+    val impls = methods map { m =>
+      val name = m.name.toTermName
+      val tparams = m.typeParams.map(c.internal.typeDef(_))
+      val paramss = m.paramLists.map(_.map(c.internal.valDef(_)))
+      val resTpe = m.returnType
+
+      val defn =
         q"def $name[..$tparams](...$paramss): $resTpe = null.asInstanceOf[$resTpe]"
-      }
+      c.internal.substituteSymbols(defn, tparms, targs)
+    }
     
-    c.Expr[Any](q"""
-        new ${typeToImplement} {
-          ..$methods
-        }
-      """)
+    val inst = TypeName(c.freshName)
+
+    q"""
+      class $inst extends $tpe {
+        ..$impls
+      }
+      new $inst
+    """
   }
 }
