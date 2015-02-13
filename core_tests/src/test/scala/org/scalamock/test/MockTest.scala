@@ -1,7 +1,6 @@
 package org.scalamock.test
 
 import org.scalatest.FreeSpec
-import com.paulbutcher.test._
 
 class MockTest extends FreeSpec {
   

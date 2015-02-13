@@ -27,7 +27,7 @@ object ImplementImpl {
     val impls = methods map { m =>
       val name = m.name.toTermName
       val tparams = m.typeParams.map(c.internal.typeDef(_))
-      val paramss = m.paramLists.map(_.map(c.internal.valDef(_)))
+      val paramss = m.paramLists.map(_.map(p => q"val ${p.name.toTermName}: ${p.info}"))
       val resTpe = m.returnType
 
       val defn =
