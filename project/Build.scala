@@ -56,6 +56,7 @@ object ScalaMockBuild extends Build {
     "core_tests", 
     file("core_tests"),
     settings = buildSettings ++ Seq(
-      name := "Implementor Core Tests"
+      name := "Implementor Core Tests",
+      libraryDependencies ++= Seq("org.scalatest" %% "scalatest" % "2.2.4")
     )) dependsOn(core)
 }
