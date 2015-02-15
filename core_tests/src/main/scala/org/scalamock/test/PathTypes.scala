@@ -3,7 +3,7 @@ package org.scalamock.test
 trait PathTypes {
   trait Embedded {}
   
-  def referencesEmbedded(): Embedded
+  def referencesEmbedded(x: Embedded): Embedded
 }
 
 object PathTypes {
